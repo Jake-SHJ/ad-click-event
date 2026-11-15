@@ -59,7 +59,7 @@ ERD와 달라진 점은 맨 아래 [ERD 대비 변경](#erd-대비-변경)에 �
 | validity | text | `VALID` \| `INVALID` |
 | reason | text | INVALID일 때만: `NO_IMPRESSION` \| `STALE_IMPRESSION` \| `DUPLICATE` \| `NON_HUMAN` \| `AD_MISMATCH` |
 
-- 확정 경로(`finalizer`)만 기록한다. 긴 유예(24시간)가 지난 클릭만 판정하므로 한 번 기록한 판정은 바뀌지 않는다.
+- 확정 경로(`pipeline`의 `finalize` 모듈)만 기록한다. 긴 유예(24시간)가 지난 클릭만 판정하므로 한 번 기록한 판정은 바뀌지 않는다.
 - 규칙 평가 순서: `AD_MISMATCH` → `NO_IMPRESSION` → `STALE_IMPRESSION` → `DUPLICATE` → `NON_HUMAN` → `VALID`.
 - 중복 클릭의 "직전 클릭"은 판정 결과와 관계없이 같은 노출에서 `(clicked_at, click_id)` 순서상 바로 앞 클릭.
 

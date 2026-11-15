@@ -32,7 +32,7 @@
 
 - **Decision**: Spring Boot (현행 메이저), Spring MVC + 가상 스레드.
 - **Rationale**: Kafka(Spring Kafka), 스케줄 작업, Actuator·Micrometer 지표, Testcontainers 연동이 한
-  생태계에 있다. 서비스 여러 개를 같은 방식으로 만들 수 있다.
+  생태계에 있다. 앱 2개를 같은 방식으로 만들고, `pipeline`은 Spring Modulith로 모듈을 나눈다(16번).
 - **Alternatives considered**: Ktor — 더 가볍고 Kotlin 친화적이지만 Kafka Streams·스케줄·지표 연동을 직접
   조립해야 해 코드가 늘어난다.
 
@@ -121,7 +121,7 @@
 
 ## 11. 판정 규칙 실행 (확정 경로)
 
-- **Decision**: 일별 확정은 Spring 스케줄 작업(`finalizer`)이 SQL로 실행한다.
+- **Decision**: 일별 확정은 `pipeline` 앱의 `finalize` 모듈 스케줄 작업이 SQL로 실행한다.
   중복 클릭은 `LAG(clicked_at) OVER (PARTITION BY impression_id ORDER BY clicked_at, click_id)`로 측정 시각 순서
   기준 직전 클릭과의 간격을 구한다. 규칙 파라미터는 `rule_version`별 설정 파일에 둔다.
 - **Rationale**: 늦은 도착이 모두 들어온 뒤 한 번에 판정하므로 결과가 결정적이고, 같은 입력이면 같은 결과가
@@ -145,8 +145,9 @@
 - **Decision**: 데모 프로필에서만 켜지는 장애 주입 지점을 둔다.
   - **중복 전송 폭주**: 수집 서버가 일정 시간 동안 같은 클릭을 Kafka에 2~3번 발행(프로듀서 재시도 상황 재현).
   - **늦게 도착한 클릭**: 수집 서버가 일부 클릭의 발행을 N분 지연(네트워크 지연 재현).
-  - **단계 장애**: 저장 컨슈머(`ingester`)를 일정 시간 멈췄다가 자동 재개(Kafka에 적체가 쌓였다가 해소).
-  - 시나리오 상태는 조회 API가 관리하고 한 번에 하나만 실행(FR-029).
+  - **단계 장애**: `ingest` 모듈의 저장 컨슈머를 일정 시간 일시정지했다가 자동 재개(Kafka에 적체가 쌓였다가 해소).
+  - 시나리오 상태는 `demo` 모듈이 관리하고 한 번에 하나만 실행(FR-029). `ingest` 일시정지는 같은 앱 안의
+    모듈 API 호출로, `collector` 장애 주입은 데모 프로필 전용 내부 HTTP 엔드포인트로 한다.
 - **Rationale**: 실제 장애 유형을 재현하면서도 데모 프로필이 아니면 코드 경로가 꺼져 운영 동작에 영향이 없다.
 
 ## 15. 로컬 실행·CI
@@ -155,3 +156,23 @@
   (`make demo-up` / `make demo-down`, FR-033). CI는 GitHub Actions: 빌드, Kotest, Testcontainers 통합 테스트,
   Avro 호환성 검사, 웹 화면 타입 검사·테스트.
 - **Rationale**: 헌법의 PR·CI 게이트를 실제로 적용한다. 노트북 한 대 기준(spec Assumptions).
+
+## 16. 배포 단위: 앱 2개 + Spring Modulith
+
+- **Decision**: `collector`(수집)만 별도 앱으로 두고, 저장·실시간 집계·확정·조회·데모는 Spring Modulith 앱
+  `pipeline`의 모듈(`ingest`, `realtime`, `finalize`, `query`, `demo`, 공용 `rules`)로 묶는다.
+  Gradle 모듈은 `shared`, `collector`, `pipeline`, `loadtest` 넷과 `web`이다.
+- **Rationale**:
+  - 처음 안(단계마다 앱 하나, 6개 + loadgen)은 설정·compose·포트·지표 대상이 단계 수만큼 늘어 구조가 복잡했다
+    (헌법 VIII). 단계 사이 데이터는 이미 Kafka·PostgreSQL을 거치므로 프로세스를 나눠 얻는 격리 이득이 거의 없다.
+  - 예외는 `collector`다. 초당 1만 건을 받으며 리다이렉트 p95 ≤ 1초(SC-003)를 지켜야 해서, Kafka Streams 집계나
+    확정 SQL과 같은 JVM에서 CPU를 다투지 않게 분리한다.
+  - Spring Modulith는 한 앱 안에서도 모듈 경계를 `ApplicationModules.verify()` 테스트로 강제하고, 모듈 구조
+    문서(PlantUML·AsciiDoc)를 생성해 포트폴리오 설명 자료로도 쓸 수 있다.
+  - "단계 장애" 시나리오는 프로세스를 죽이지 않고 `ingest` 컨슈머 일시정지로 재현하므로 한 앱이어도 가능하다.
+  - DB에 쓰는 앱이 `pipeline` 하나라 Flyway 마이그레이션도 `pipeline`이 갖는다. `collector`는 `ad`만 읽는다.
+- **Alternatives considered**:
+  - 단계별 앱 6개 — 위 이유로 기각.
+  - 앱 1개(collector까지 포함) — 수집 지연이 다른 단계 부하에 흔들린다.
+  - 앱 3개(collector, realtime 분리, 나머지) — Kafka Streams CPU 격리 이득이 노트북 데모 규모에서는 작다.
+    부하 테스트(SC-002/SC-009)에서 지연 목표를 못 맞추면 그때 `realtime`을 분리한다.

@@ -9,9 +9,9 @@
   "at": "2026-11-15T12:00:01Z",
   "stages": [
     { "id": "collector",  "ratePerSec": 9980.0, "p95LatencyMs": 4.1, "backlog": 0 },
-    { "id": "ingester",   "ratePerSec": 9975.0, "p95LatencyMs": 120.0, "backlog": 312 },
-    { "id": "aggregator", "ratePerSec": 9970.0, "p95LatencyMs": 15500.0, "backlog": 40 },
-    { "id": "finalizer",  "ratePerSec": 0.0, "lastRunAt": "2026-11-15T00:30:00Z" },
+    { "id": "ingest",     "ratePerSec": 9975.0, "p95LatencyMs": 120.0, "backlog": 312 },
+    { "id": "realtime",   "ratePerSec": 9970.0, "p95LatencyMs": 15500.0, "backlog": 40 },
+    { "id": "finalize",   "ratePerSec": 0.0, "lastRunAt": "2026-11-15T00:30:00Z" },
     { "id": "query",      "ratePerSec": 12.0, "p95LatencyMs": 35.0 }
   ],
   "reconciliation": {
@@ -27,7 +27,8 @@
 }
 ```
 
-- `stages[].id`는 고정 목록이며 화면의 흐름 다이어그램 노드와 1:1로 대응한다.
+- `stages[].id`는 고정 목록(`collector`, `ingest`, `realtime`, `finalize`, `query`)이며 화면의 흐름 다이어그램
+  노드와 1:1로 대응한다. `collector` 외에는 `pipeline` 앱 안의 모듈이다.
 - `reconciliation.balanced` = `received == stored + deduplicated + quarantined + inFlight`. 서버가 계산한다.
 - `verdicts`는 실시간 경로의 잠정 판정 누적치다.
 - 데모 시작 시점부터의 누적 값이다(데모 재시작 시 0부터).
