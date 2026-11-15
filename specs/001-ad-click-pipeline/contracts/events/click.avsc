@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Click",
+  "namespace": "dev.jakeshj.adclick.event.v1",
+  "doc": "Topic clicks.v1. Key: impressionId if present, else clickId.",
+  "fields": [
+    { "name": "clickId", "type": { "type": "string", "logicalType": "uuid" }, "doc": "UUIDv7, issued at measurement. Idempotency key." },
+    { "name": "adId", "type": "long" },
+    { "name": "impressionId", "type": ["null", { "type": "string", "logicalType": "uuid" }], "default": null },
+    { "name": "ip", "type": "string", "doc": "PII (constitution IV). Raw value while only synthetic data is handled.", "pii": true },
+    { "name": "userAgent", "type": "string", "doc": "PII (constitution IV).", "pii": true },
+    { "name": "clickedAt", "type": { "type": "long", "logicalType": "timestamp-millis" }, "doc": "Measurement time (302 issued)." }
+  ]
+}

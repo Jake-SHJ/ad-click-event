@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info:
+  title: Ad Click Query API
+  version: 1.0.0
+  description: |
+    광고주 조회 API(US3)와 로컬 데모용 시각화 API(US4).
+    광고주 API는 X-API-Key로 인증하고, 모든 조회는 키의 광고주 소유 광고로 제한된다(FR-019).
+servers:
+  - url: http://localhost:8082
+components:
+  securitySchemes:
+    apiKey: { type: apiKey, in: header, name: X-API-Key }
+  schemas:
+    ClickCounts:
+      type: object
+      required: [validClicks, invalidClicks, invalidByReason]
+      properties:
+        validClicks: { type: integer, format: int64 }
+        invalidClicks: { type: integer, format: int64 }
+        pendingClicks: { type: integer, format: int64, description: 잠정치에만 있음 }
+        invalidByReason:
+          type: object
+          additionalProperties: { type: integer, format: int64 }
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+paths:
+  /v1/ads/{adId}/clicks/recent:
+    get:
+      summary: 최근 M분 동안 광고의 1분 단위 클릭 수 (FR-020)
+      security: [{ apiKey: [] }]
+      parameters:
+        - { name: adId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: minutes, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 1440 } }
+      responses:
+        '200':
+          description: 잠정치(실시간 경로)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adId: { type: integer, format: int64 }
+                  status: { type: string, enum: [PRELIMINARY] }
+                  windows:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/ClickCounts'
+                        - type: object
+                          properties:
+                            windowStart: { type: string, format: date-time }
+        '401': { description: 키 없음·잘못된 키 }
+        '404': { description: 없는 광고이거나 다른 광고주의 광고(존재 여부를 드러내지 않음) }
+  /v1/ads/top:
+    get:
+      summary: 최근 M분 동안 유효 클릭이 가장 많은 내 광고 상위 N개 (FR-021)
+      security: [{ apiKey: [] }]
+      parameters:
+        - { name: minutes, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 1440 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 10 } }
+      responses:
+        '200':
+          description: 유효 클릭 내림차순
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [PRELIMINARY] }
+                  ads:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        adId: { type: integer, format: int64 }
+                        validClicks: { type: integer, format: int64 }
+  /v1/ads/{adId}/clicks/daily:
+    get:
+      summary: 일별 유효·무효 클릭 수 (FR-018)
+      description: |
+        지난 날짜는 최신 revision의 FINAL, 확정 전 날짜는 1분 집계 합산 PRELIMINARY.
+        날짜 경계는 광고주 시간대 기준.
+      security: [{ apiKey: [] }]
+      parameters:
+        - { name: adId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: 날짜별 수치
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adId: { type: integer, format: int64 }
+                  timeZone: { type: string }
+                  days:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/ClickCounts'
+                        - type: object
+                          properties:
+                            date: { type: string, format: date }
+                            status: { type: string, enum: [PRELIMINARY, FINAL] }
+                            revision: { type: integer, description: FINAL일 때만 }
+                            ruleVersion: { type: string }
+  /demo/stream:
+    get:
+      summary: 시각화용 실시간 지표 스트림 (SSE, 데모 프로필 전용)
+      description: 형식은 demo-stream.md 참조. 1초마다 snapshot 이벤트를 보낸다.
+      responses:
+        '200':
+          description: text/event-stream
+          content:
+            text/event-stream: { schema: { type: string } }
+  /demo/scenarios/{scenario}:
+    post:
+      summary: 데모 시나리오 실행 (FR-029)
+      parameters:
+        - name: scenario
+          in: path
+          required: true
+          schema: { type: string, enum: [DUPLICATE_BURST, LATE_ARRIVAL, STAGE_OUTAGE] }
+      responses:
+        '202': { description: 실행 시작. 본문에 runId·endsAt }
+        '409': { description: 다른 시나리오가 진행 중. 본문에 진행 중인 시나리오 }

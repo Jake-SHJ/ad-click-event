@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "MinuteAdAggregate",
+  "namespace": "dev.jakeshj.adclick.event.v1",
+  "doc": "Topic minute-ad-aggregates.v1. Key: adId + windowStart. Cumulative values per window; consumers upsert (idempotent).",
+  "fields": [
+    { "name": "adId", "type": "long" },
+    { "name": "advertiserId", "type": "long" },
+    { "name": "windowStart", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "validClicks", "type": "long" },
+    { "name": "invalidClicks", "type": "long" },
+    { "name": "invalidByReason", "type": { "type": "map", "values": "long" } },
+    { "name": "pendingClicks", "type": "long" },
+    { "name": "ruleVersion", "type": "string" }
+  ]
+}

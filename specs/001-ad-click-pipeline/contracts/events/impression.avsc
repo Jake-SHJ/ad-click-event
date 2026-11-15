@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Impression",
+  "namespace": "dev.jakeshj.adclick.event.v1",
+  "doc": "Topic impressions.v1. Key: impressionId.",
+  "fields": [
+    { "name": "impressionId", "type": { "type": "string", "logicalType": "uuid" } },
+    { "name": "adId", "type": "long" },
+    { "name": "servedAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+  ]
+}

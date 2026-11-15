@@ -1,0 +1,51 @@
+openapi: 3.1.0
+info:
+  title: Ad Click Collector API
+  version: 1.0.0
+  description: |
+    클릭 측정(리다이렉트)과 노출 기록. 이벤트가 Kafka에 acks=all로 기록된 뒤에만 성공을 응답한다(FR-003).
+servers:
+  - url: http://localhost:8081
+paths:
+  /c/{adId}:
+    get:
+      summary: 클릭 측정 후 랜딩 페이지로 리다이렉트
+      description: |
+        click_id(UUIDv7)와 clicked_at을 발급하고 clicks.v1에 기록한 뒤 302로 이동한다.
+        Kafka 기록에 실패하면 짧게 재시도하고, 그래도 실패하면 로컬 디스크 버퍼에 남긴 뒤 302를 보낸다
+        (사용자 이동은 막지 않고, 버퍼는 복구 후 재발행되어 유실이 없다).
+      parameters:
+        - name: adId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: imp
+          in: query
+          required: false
+          description: 노출 ID. 없으면 노출 없는 클릭으로 기록
+          schema: { type: string, format: uuid }
+      responses:
+        '302':
+          description: 랜딩 페이지로 이동
+          headers:
+            Location: { schema: { type: string, format: uri } }
+            X-Click-Id: { schema: { type: string, format: uuid } }
+        '404':
+          description: 등록되지 않은 광고
+  /impressions:
+    post:
+      summary: 노출 기록
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [impressionId, adId, servedAt]
+              properties:
+                impressionId: { type: string, format: uuid }
+                adId: { type: integer, format: int64 }
+                servedAt: { type: string, format: date-time }
+      responses:
+        '202': { description: impressions.v1에 기록됨 }
+        '400': { description: 형식 오류. 원본은 격리 토픽으로 보관됨 }
