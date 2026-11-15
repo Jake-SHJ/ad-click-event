@@ -1,0 +1,29 @@
+# Gradle / Kotlin
+.gradle/
+build/
+out/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Web
+node_modules/
+dist/
+coverage/
+
+# Env (합성 데모 키만 담은 .env.demo는 커밋한다)
+.env*
+!.env.demo
+
+# Logs / OS
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db

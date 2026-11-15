@@ -1,0 +1,63 @@
+# 버전은 2026-11-15 기준 최신 안정판.
+# Spring Boot BOM이 관리하는 라이브러리(Kafka, Spring Kafka, Flyway, PostgreSQL JDBC, Micrometer,
+# Testcontainers, Logback)는 버전을 적지 않고 BOM을 따른다. 충돌을 막기 위해서다.
+
+[versions]
+kotlin = "2.3.21"            # Spring Boot 4.1 BOM과 맞춘 버전
+spring-boot = "4.1.2"
+ktlint-gradle = "14.2.0"
+avro = "1.12.2"
+apicurio = "3.3.4"
+kotest = "6.2.7"
+mockk = "1.14.12"
+logstash-logback = "9.0"
+gatling = "3.16.0"
+foojay = "1.0.0"
+spring-modulith = "2.1.2"
+
+[libraries]
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
+
+# Spring Boot BOM 관리
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-starter-kafka = { module = "org.springframework.boot:spring-boot-starter-kafka" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+kafka-streams = { module = "org.apache.kafka:kafka-streams" }
+kafka-streams-test-utils = { module = "org.apache.kafka:kafka-streams-test-utils" }
+flyway-core = { module = "org.flywaydb:flyway-core" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+postgresql = { module = "org.postgresql:postgresql" }
+micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+jackson-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+
+# Spring Modulith BOM 관리
+spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
+spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+spring-modulith-docs = { module = "org.springframework.modulith:spring-modulith-docs" }
+
+# 직접 버전 고정
+avro = { module = "org.apache.avro:avro", version.ref = "avro" }
+apicurio-avro-serde = { module = "io.apicurio:apicurio-registry-avro-serde-kafka", version.ref = "apicurio" }
+logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback" }
+kotest-runner = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertions = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
+kotest-spring = { module = "io.kotest:kotest-extensions-spring", version.ref = "kotest" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+# build-logic(컨벤션 플러그인)이 쓰는 Gradle 플러그인 아티팩트
+gradle-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+gradle-kotlin-allopen = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
+gradle-spring-boot = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
+gradle-ktlint = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint-gradle" }
+
+[plugins]
+gatling = { id = "io.gatling.gradle", version.ref = "gatling" }
+foojay-resolver = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "foojay" }
